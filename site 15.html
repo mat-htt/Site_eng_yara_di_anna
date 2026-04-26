@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="description" content="Belarus Voyage — discover legendary castles, primeval forests and authentic culture with tailor-made tours.">
+  <title>Belarus Voyage | Heritage Tours & Nature Retreats</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root {
+      --deep-blue: #001f3f;
+      --gold: #c5a059;
+      --gold-hover: #b08a3e;
+      --white: #ffffff;
+      --off-white: #f8f7f4;
+      --shadow-sm: 0 10px 30px rgba(0,0,0,0.08);
+      --shadow-md: 0 20px 45px rgba(0,0,0,0.12);
+      --shadow-gold: 0 12px 35px rgba(197,160,89,0.4);
+      --radius: 22px;
+      --radius-lg: 32px;
+      --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1.2);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: linear-gradient(135deg, #f5f0eb 0%, #ffffff 100%);
+      color: #1a1a1a;
+      line-height: 1.7;
+      overflow-x: hidden;
+      background-attachment: fixed;
+      cursor: default;
+    }
+    #preloader {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: var(--deep-blue); display: flex; align-items: center; justify-content: center;
+      z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s;
+    }
+    #preloader.hidden { opacity: 0; visibility: hidden; }
+    .loader {
+      width: 60px; height: 60px; border: 5px solid rgba(255,255,255,0.3);
+      border-top: 5px solid var(--gold); border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    h1, h2, h3 { font-family: 'Playfair Display', serif; font-weight: 700; }
+    .glass {
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(197,160,89,0.25);
+    }
+    #particles-js {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 1; pointer-events: none;
+    }
+    .main-header {
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(0,31,63,0.92);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      padding: 14px 0;
+    }
+    .header-inner {
+      max-width: 1300px; margin: 0 auto; padding: 0 28px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+    }
+    .logo {
+      font-family: 'Playfair Display', serif; font-weight: 700; font-size: 2.1rem;
+      color: var(--white); text-decoration: none; letter-spacing: 1px;
+      transition: text-shadow 0.3s;
+    }
+    .logo:hover { text-shadow: 0 0 20px var(--gold); }
+    .logo .voyage { color: var(--gold); }
+    .nav-links { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+    .nav-links a {
+      text-decoration: none; font-weight: 600; color: rgba(255,255,255,0.9);
+      font-size: 0.95rem; transition: color 0.25s, transform 0.25s; position: relative;
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 2px;
+      background: var(--gold); transition: width 0.3s;
+    }
+    .nav-links a:hover { color: var(--gold); transform: translateY(-2px); }
+    .nav-links a:hover::after { width: 100%; }
+    .wishlist-count {
+      background: var(--gold); color: var(--deep-blue); border-radius: 50%;
+      padding: 2px 7px; font-size: 0.8rem; margin-left: 5px;
+    }
+
+    .page { display: none; animation: fadeSlide 0.5s ease; }
+    .page.active { display: block; }
+    @keyframes fadeSlide { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
+    .section-title {
+      font-size: 2.5rem; margin: 60px 0 30px; color: var(--deep-blue);
+      display: flex; align-items: center; gap: 14px;
+    }
+    .section-title i { color: var(--gold); font-size: 2rem; }
+
+    .hero {
+      background: linear-gradient(135deg, #001f3f 0%, #0a2a4a 100%);
+      padding: 100px 28px 110px; text-align: center; color: white;
+      clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+      position: relative; overflow: hidden;
+    }
+    .hero h1 { font-size: clamp(3rem, 7vw, 5rem); margin-bottom: 20px; position: relative; z-index: 2; }
+    .hero p { font-size: 1.3rem; max-width: 700px; margin: 0 auto 40px; position: relative; z-index: 2; }
+    .btn {
+      display: inline-block; background: var(--gold); color: var(--deep-blue);
+      padding: 16px 44px; border-radius: 50px; font-weight: 700; font-size: 1rem;
+      text-decoration: none; transition: var(--transition); border: none; cursor: pointer;
+      letter-spacing: 0.5px; box-shadow: var(--shadow-gold); text-transform: uppercase;
+      position: relative; overflow: hidden; z-index: 2;
+    }
+    .btn::after {
+      content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0;
+      border-radius: 50%; background: rgba(255,255,255,0.4); transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+    .btn:hover::after { width: 300px; height: 300px; }
+    .btn:hover { background: var(--gold-hover); transform: translateY(-4px); box-shadow: 0 22px 40px rgba(197,160,89,0.6); }
+    .btn-outline { background: transparent; border: 2px solid var(--gold); color: var(--gold); box-shadow: none; }
+    .btn-outline:hover { background: var(--gold); color: var(--deep-blue); }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 34px; margin: 40px 0 60px; }
+    .tour-card {
+      background: white; border-radius: var(--radius); overflow: hidden;
+      box-shadow: var(--shadow-sm); transition: var(--transition); cursor: pointer;
+      display: flex; flex-direction: column; position: relative;
+      border: 1px solid rgba(197,160,89,0.1);
+      transform-style: preserve-3d; perspective: 1000px;
+    }
+    .tour-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: var(--shadow-md); border-color: var(--gold); }
+    .tour-card .card-img { height: 240px; overflow: hidden; position: relative; background: #ddd; }
+    .tour-card .card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+    .tour-card:hover .card-img img { transform: scale(1.1); }
+    .favorite-btn {
+      position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,0.85);
+      border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border: none; font-size: 1.2rem; color: #ccc; transition: var(--transition); z-index: 5;
+      backdrop-filter: blur(8px);
+    }
+    .favorite-btn.active { color: #e63946; animation: heartBeat 0.4s ease; }
+    @keyframes heartBeat { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+    .card-body { padding: 24px; flex: 1; display: flex; flex-direction: column; }
+    .card-body h3 { font-size: 1.6rem; color: var(--deep-blue); margin-bottom: 8px; }
+    .legend { font-style: italic; color: #555; margin: 8px 0 16px; border-left: 4px solid var(--gold); padding-left: 14px; }
+    .btn-card {
+      margin-top: auto; background: var(--deep-blue); color: white; padding: 14px; border-radius: 40px;
+      font-weight: 700; text-align: center; cursor: pointer; transition: var(--transition); border: none;
+      position: relative; overflow: hidden;
+    }
+    .btn-card::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition: left 0.5s; }
+    .btn-card:hover::after { left: 100%; }
+    .btn-card:hover { background: var(--gold); color: var(--deep-blue); }
+
+    .detail-container {
+      background: white; border-radius: var(--radius-lg); padding: 36px;
+      box-shadow: var(--shadow-md); max-width: 960px; margin: 40px auto;
+    }
+    .back-btn {
+      background: none; border: none; font-weight: 700; color: var(--deep-blue); cursor: pointer;
+      font-size: 1.1rem; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .tour-img { width: 100%; max-height: 450px; object-fit: cover; border-radius: var(--radius); margin: 20px 0; background: #eee; }
+    .itinerary-list { list-style: none; margin: 24px 0; }
+    .itinerary-list li { padding: 14px 0; border-bottom: 1px solid #eee; display: flex; gap: 14px; align-items: baseline; }
+    .itinerary-list li span { font-weight: 800; color: var(--gold); min-width: 28px; }
+    .logistics-block { background: #f4f7fa; border-radius: 20px; padding: 24px; margin: 24px 0; display: flex; flex-wrap: wrap; gap: 32px; }
+    .mini-map { height: 200px; border-radius: 16px; margin-top: 12px; box-shadow: var(--shadow-sm); }
+
+    .calendar-card { background: white; border-radius: 28px; padding: 32px; box-shadow: var(--shadow-sm); max-width: 680px; margin: 0 auto; }
+    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; text-align: center; }
+    .day-cell { padding: 16px 6px; border-radius: 16px; cursor: pointer; font-weight: 600; transition: var(--transition); }
+    .day-cell:hover { background: #eef2f9; transform: scale(1.05); }
+    .day-cell.selected { background: var(--deep-blue); color: white; font-weight: 800; }
+
+    #mapid { height: 450px; border-radius: 28px; box-shadow: var(--shadow-md); margin: 20px 0 40px; }
+
+    .footer {
+      background: var(--deep-blue); color: rgba(255,255,255,0.85); padding: 60px 28px 30px;
+      margin-top: 80px; position: relative;
+    }
+    .footer::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+    .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 40px; max-width: 1280px; margin: 0 auto; }
+    .footer h3 { color: var(--gold); margin-bottom: 18px; font-size: 1.3rem; }
+    .footer a { color: rgba(255,255,255,0.75); text-decoration: none; }
+    .footer a:hover { color: var(--gold); }
+    .social-icons a { font-size: 1.6rem; margin-right: 16px; color: rgba(255,255,255,0.7); transition: color 0.3s, transform 0.3s; }
+    .social-icons a:hover { color: var(--gold); transform: translateY(-3px); }
+
+    .ai-chat {
+      position: fixed; bottom: 100px; right: 28px; width: 320px; background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(20px); border-radius: 24px; box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+      padding: 20px; z-index: 2000; display: none; animation: fadeSlide 0.3s ease;
+      border: 1px solid rgba(197,160,89,0.3);
+    }
+    .ai-chat.active { display: block; }
+    .close-chat { position: absolute; top: 12px; right: 16px; cursor: pointer; color: #666; }
+    .support-bubble {
+      position: fixed; bottom: 28px; right: 28px; width: 58px; height: 58px;
+      background: var(--gold); color: var(--deep-blue); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; cursor: pointer; box-shadow: var(--shadow-gold);
+      z-index: 1999; transition: var(--transition); border: none;
+    }
+    .support-bubble:hover { background: var(--gold-hover); transform: scale(1.1) rotate(10deg); }
+
+    #backToTop {
+      position: fixed; bottom: 28px; left: 28px; background: var(--gold); color: var(--deep-blue);
+      border: none; width: 48px; height: 48px; border-radius: 50%; font-size: 1.4rem; cursor: pointer;
+      box-shadow: var(--shadow-gold); display: none; z-index: 999; transition: var(--transition);
+    }
+    .notification {
+      position: fixed; top: 30px; right: 30px; background: var(--deep-blue); color: white;
+      padding: 16px 28px; border-radius: 40px; box-shadow: var(--shadow-md); z-index: 3000;
+      display: none; align-items: center; gap: 10px; animation: slideInRight 0.3s ease;
+    }
+    @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+      .header-inner { flex-direction: column; align-items: flex-start; }
+      .nav-links { gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="preloader"><div class="loader"></div></div>
+
+  <header class="main-header">
+    <div class="header-inner">
+      <a href="#" class="logo" onclick="navigateTo('home')">Belarus<span class="voyage">Voyage</span></a>
+      <nav class="nav-links">
+        <a href="#" onclick="navigateTo('home')">Home</a>
+        <a href="#" onclick="navigateTo('tours')">Tours</a>
+        <a href="#" onclick="navigateTo('active')">Active</a>
+        <a href="#" onclick="navigateTo('calendar')">Calendar</a>
+        <a href="#" onclick="navigateTo('map')">Map</a>
+        <a href="#" onclick="showWishlist()"><i class="far fa-heart"></i> Wishlist <span class="wishlist-count" id="wishlistCount">0</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <div id="home-page" class="page active">
+      <div class="hero" id="hero">
+        <div id="particles-js"></div>
+        <h1 data-aos="fade-down">Discover the Soul of Belarus</h1>
+        <p data-aos="fade-up" data-aos-delay="200">Ancient castles, primeval forests, and legendary hospitality — curated journeys for the global explorer.</p>
+        <button class="btn" onclick="navigateTo('tours')" data-aos="zoom-in" data-aos-delay="400">Explore Top 10 Tours</button>
+      </div>
+      <div class="container">
+        <h2 class="section-title" data-aos="fade-right" id="tours-section"><i class="fas fa-star"></i> Top 10 Signature Tours</h2>
+        <div class="grid" id="toursGrid" data-aos="fade-up"></div>
+        <h2 class="section-title" data-aos="fade-right" id="active-section"><i class="fas fa-tree"></i> Active Family Holidays</h2>
+        <div class="grid" id="activeGrid" data-aos="fade-up"></div>
+        <h2 class="section-title" data-aos="fade-right" id="calendar-section"><i class="fas fa-calendar-alt"></i> Check Availability</h2>
+        <div class="calendar-card" id="calendarWidget" data-aos="fade-up"></div>
+        <h2 class="section-title" data-aos="fade-right" id="map-section"><i class="fas fa-map-marked-alt"></i> Our Locations</h2>
+        <div id="mapid" data-aos="fade-up"></div>
+      </div>
+    </div>
+
+    <div id="tour-detail-page" class="page">
+      <div class="container detail-container" id="tourDetailContent"></div>
+    </div>
+    <div id="active-detail-page" class="page">
+      <div class="container detail-container" id="activeDetailContent"></div>
+    </div>
+    <div id="wishlist-page" class="page">
+      <div class="container" style="margin:40px auto;">
+        <h2 class="section-title"><i class="fas fa-heart"></i> My Wishlist</h2>
+        <div id="wishlistContainer" class="grid"></div>
+      </div>
+    </div>
+  </main>
+
+  <button class="support-bubble" onclick="toggleAiChat()"><i class="fas fa-robot"></i></button>
+  <div class="ai-chat" id="aiChat">
+    <span class="close-chat" onclick="closeAiChat()"><i class="fas fa-times"></i></span>
+    <p><strong>👋 Hello!</strong> I see you are exploring. Can I help you choose between a <span style="color:var(--gold);">castle tour</span> and an <span style="color:var(--gold);">active nature retreat</span>?</p>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="btn-outline" style="padding:8px 18px; font-size:0.85rem;" onclick="aiResponse('castle')">Castles</button>
+      <button class="btn-outline" style="padding:8px 18px; font-size:0.85rem;" onclick="aiResponse('nature')">Nature</button>
+    </div>
+    <p id="aiAnswer" style="margin-top:12px; font-style:italic;"></p>
+  </div>
+
+  <div class="notification" id="notification"></div>
+
+  <footer class="footer">
+    <div class="footer-grid">
+      <div>
+        <h3>About Belarus Voyage</h3>
+        <p>We craft bespoke journeys into the heart of Belarusian heritage, from legendary castles to pristine nature. Our mission is to reveal the true soul of this enchanting country.</p>
+      </div>
+      <div>
+        <h3>Quick Links</h3>
+        <p><a href="#" onclick="navigateTo('home')">Home</a></p>
+        <p><a href="#" onclick="navigateTo('tours')">Top 10 Tours</a></p>
+        <p><a href="#" onclick="navigateTo('calendar')">Calendar</a></p>
+        <p><a href="#" onclick="navigateTo('map')">Map</a></p>
+      </div>
+      <div>
+        <h3>Contact & Social</h3>
+        <p><i class="fas fa-map-marker-alt"></i> 14 Independence Ave, Minsk</p>
+        <p><i class="fas fa-phone"></i> +375 29 123-45-67</p>
+        <p><i class="fas fa-envelope"></i> info@belarusvoyage.by</p>
+        <div class="social-icons" style="margin-top:14px;">
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-facebook"></i></a>
+          <a href="#"><i class="fab fa-telegram"></i></a>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center; margin-top:36px; opacity:0.7;">© 2025 Belarus Voyage — Unforgettable memories start here.</div>
+  </footer>
+  <button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i class="fas fa-arrow-up"></i></button>
+
+  <!-- СТАТИЧНОЕ МОДАЛЬНОЕ ОКНО ДЛЯ БРОНИРОВАНИЯ -->
+  <div id="bookingModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:3500;">
+    <div class="glass" style="padding:32px; border-radius:28px; max-width:450px; width:90%;">
+      <h3 id="modalTitle">Book Tour</h3>
+      <form id="bookingForm">
+        <input type="text" placeholder="Full Name" required style="width:100%; padding:12px; margin:8px 0; border-radius:30px; border:1px solid #ddd;">
+        <input type="email" placeholder="Email" required style="width:100%; padding:12px; margin:8px 0; border-radius:30px; border:1px solid #ddd;">
+        <input type="tel" placeholder="Phone" style="width:100%; padding:12px; margin:8px 0; border-radius:30px; border:1px solid #ddd;">
+        <input type="number" placeholder="Travelers" min="1" required style="width:100%; padding:12px; margin:8px 0; border-radius:30px; border:1px solid #ddd;">
+        <input type="date" required style="width:100%; padding:12px; margin:8px 0; border-radius:30px; border:1px solid #ddd;">
+        <button class="btn" type="submit" style="width:100%; margin-top:12px;">Confirm Booking</button>
+        <button type="button" class="btn-outline" style="width:100%; margin-top:8px;" onclick="closeBookingModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+  <script>
+    // ========== DATA ==========
+    const tours = [
+      {
+        id:1, name:"Nesvizh Castle", nameRu:"Несвижский замок",
+        history:"Nesvizh Castle, a UNESCO World Heritage site, stands as the crown jewel of Belarusian architecture. Built in the 16th century by the Radziwiłł family, it combined Renaissance, Baroque, and Rococo styles. The castle complex includes a magnificent palace, a beautiful park, and the Corpus Christi Church with its stunning frescoes. Over centuries, Nesvizh became a cultural hub where music, art, and science flourished. The Radziwiłłs amassed a vast library and art collection, making the castle a treasure trove of European culture. The legend of the Black Lady of Nesvizh — the ghost of Barbara Radziwiłł — continues to draw visitors. Her spirit is said to roam the Golden Hall, appearing to foretell important events. During the Napoleonic Wars, the castle was spared destruction thanks to its owner's diplomacy. After extensive restoration, Nesvizh now welcomes visitors from around the world, offering a glimpse into the opulent life of the magnates.",
+        legend:"The Black Lady of Nesvizh still roams the gilded halls, whispering tales of forbidden love.",
+        program:["Arrival at Nesvizh","Castle courtyard","Golden Hall","Corpus Christi Church","Lunch","Park walk"],
+        transportGroup:"1.5h from Minsk by coach.", transportSelf:"Train to Gorodeya + taxi (15 min).",
+        stay:"Nesvizh Palace Hotel", eat:"Ratusha Restaurant",
+        img:"https://s0.rbk.ru/v6_top_pics/media/img/9/34/755716613064349.jpg",
+        lat:53.2194, lng:26.6814,
+        hotelLat:53.221, hotelLng:26.685, hotelTime:"5 min by car",
+        eatLat:53.218, eatLng:26.680, eatTime:"3 min walk"
+      },
+      {
+        id:2, name:"Puslovsky Palace (Kossovo)", nameRu:"Дворец Пусловских (Коссово)",
+        history:"The Puslovsky Palace in Kossovo is a neo-Gothic marvel built in the 19th century by Wandalin Puslowski. Its design features 12 towers, each symbolizing a month. The palace was once a vibrant cultural center, hosting concerts and receptions. Legend tells of a secret underground tunnel connecting to a nearby Sapieha castle. After years of decline, restoration has revived its romantic silhouette. Today, visitors can explore the restored halls and learn about the Puslowski family's legacy.",
+        legend:"A neo-Gothic masterpiece with 12 towers – each one a month, each one a story.",
+        program:["Palace exterior","Museum visit","Tower view","Old town walk","Lunch"],
+        transportGroup:"3h from Minsk.", transportSelf:"Car or bus to Kossovo.",
+        stay:"Kossovo Guest House", eat:"Café near palace",
+        img:"https://travel.by/wp-content/uploads/2024/05/kossovo-7-1-1536x1024.webp",
+        lat:52.7583, lng:25.1500,
+        hotelLat:52.760, hotelLng:25.152, hotelTime:"5 min walk",
+        eatLat:52.757, eatLng:25.148, eatTime:"2 min walk"
+      },
+      {
+        id:3, name:"Rumyantsev-Paskevich Palace (Gomel)", nameRu:"Дворец Румянцевых-Паскевичей",
+        history:"The Rumyantsev-Paskevich Palace in Gomel is a grand classical residence built on the high bank of the Sozh River. Owned by two prominent field marshals, the palace houses a remarkable art collection and an English park. The estate hosted royal visits and cultural events, symbolizing the power and elegance of the Russian Empire's elite. Restoration has preserved the original interiors, offering visitors a journey into aristocratic life.",
+        legend:"Overlooking the Sozh River, this palace witnessed two field marshals and imperial intrigues.",
+        program:["Palace interiors","Art gallery","Observation tower","Park & swan lake","City center"],
+        transportGroup:"3h train from Minsk.", transportSelf:"Train to Gomel + bus.",
+        stay:"Hotel Gomel", eat:"Provence Restaurant",
+        img:"https://bestbelarus.by/upload/resize_cache/iblock/85d/0_510_2a18e1f56f4eaac9195ab4f8530310a0f/zte8cikkv9f5hiul4d1r2x5xdkh29ju3.png",
+        lat:52.4345, lng:30.9754,
+        hotelLat:52.435, hotelLng:30.978, hotelTime:"8 min by car",
+        eatLat:52.433, eatLng:30.972, eatTime:"5 min walk"
+      },
+      {
+        id:4, name:"Lida Castle", nameRu:"Лидский замок",
+        history:"Lida Castle was built in the 14th century by Grand Duke Gediminas to defend against Teutonic Knights. Its massive stone walls have withstood sieges and centuries of warfare. Today, it hosts medieval festivals with knights' tournaments and craft markets, bringing history to life. The castle is a symbol of Belarusian resilience and chivalric spirit.",
+        legend:"Built by Grand Duke Gediminas, this fortress still echoes with medieval feasts.",
+        program:["Castle walls","Knights' hall","Weapon exhibition","Lida town"],
+        transportGroup:"2h drive from Minsk.", transportSelf:"Train to Lida + taxi.",
+        stay:"Lida Hotel", eat:"Staraya Lida Tavern",
+        img:"https://www.belarus.by/dadvimages/000658_396658.jpg",
+        lat:53.8883, lng:25.2994,
+        hotelLat:53.890, hotelLng:25.302, hotelTime:"10 min walk",
+        eatLat:53.887, eatLng:25.296, eatTime:"4 min walk"
+      },
+      {
+        id:5, name:"Sula Interactive History Park", nameRu:"Парк-музей «Сула»",
+        history:"Sula Park is a unique open-air museum where history comes alive. Visitors can sail a Viking drakkar, try archery, and explore a 17th-century manor. Annual Viking festivals attract reenactors from across Europe, making it a favorite family destination. The park preserves traditional crafts and offers immersive experiences.",
+        legend:"Sail a Viking drakkar, grind flour by hand, and taste mead in a living museum.",
+        program:["Viking ship","Workshops","Manor house","Horse riding","Feast"],
+        transportGroup:"40 min from Minsk.", transportSelf:"Taxi or bus.",
+        stay:"Sula estate rooms", eat:"Tavern inside park",
+        img:"https://parksula.by/images/DSC_72053.jpeg",
+        lat:53.6340, lng:26.6480,
+        hotelLat:53.635, hotelLng:26.650, hotelTime:"on site",
+        eatLat:53.633, eatLng:26.647, eatTime:"on site"
+      },
+      {
+        id:6, name:"Dudutki Museum", nameRu:"Музей «Дудутки»",
+        history:"Dudutki is a beloved open-air museum of traditional crafts, set on a 19th-century manor. Its working windmill, bakery, and moonshine distillery offer a genuine taste of rural Belarusian life. Dudutki has won numerous tourism awards and is a must-visit for foodies and families.",
+        legend:"The smell of fresh bread, the sound of a working windmill – a manor brought to life.",
+        program:["Bakery","Pottery","Stables","Moonshine museum","Windmill"],
+        transportGroup:"40 min from Minsk.", transportSelf:"Taxi or car.",
+        stay:"Minsk hotels", eat:"Dudutki tavern",
+        img:"https://its-brest.com/wp-content/uploads/2018/03/dudutki.jpg",
+        lat:53.5930, lng:27.6830,
+        hotelLat:53.595, hotelLng:27.685, hotelTime:"15 min to Minsk",
+        eatLat:53.592, eatLng:27.681, eatTime:"on site"
+      },
+      {
+        id:7, name:"Saint Sophia Cathedral (Polotsk)", nameRu:"Софийский собор (Полоцк)",
+        history:"Saint Sophia Cathedral in Polotsk is one of the oldest churches in Eastern Europe, built in the 11th century. It symbolizes the dawn of Christianity in Belarus and houses ancient frescoes and a renowned organ. The cathedral is the spiritual heart of Polotsk, a city considered the cradle of Belarusian statehood.",
+        legend:"Where ancient frescoes meet heavenly organ concerts.",
+        program:["Cathedral interior","Museum","Boris stone","Old town","River walk"],
+        transportGroup:"3h train from Minsk.", transportSelf:"Train to Polotsk.",
+        stay:"Dvina Hotel", eat:"Francheska Café",
+        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/80-391-0151_Kyiv_St.Sophia%27s_Cathedral_RB_18_2_%28cropped%29.jpg/330px-80-391-0151_Kyiv_St.Sophia%27s_Cathedral_RB_18_2_%28cropped%29.jpg",
+        lat:55.4833, lng:28.8000,
+        hotelLat:55.485, hotelLng:28.803, hotelTime:"10 min walk",
+        eatLat:55.482, eatLng:28.798, eatTime:"5 min walk"
+      },
+      {
+        id:8, name:"Ruzhany Palace (Sapieha)", nameRu:"Ружанский дворец (Сапег)",
+        history:"The Ruzhany Palace, once the seat of the powerful Sapieha family, was built in the 17th–18th centuries. It combined a magnificent palace with a theatre and library, earning the nickname 'Belarusian Versailles'. Although now a romantic ruin, restoration has revived its main gates, and cultural events bring the site to life.",
+        legend:"A romantic ruin telling stories of the powerful Sapieha family.",
+        program:["Palace gates","Exhibition","Trinity Church","Town square"],
+        transportGroup:"2.5h from Brest.", transportSelf:"Car or bus.",
+        stay:"Ruzhany estate", eat:"Local café",
+        img:"https://1prof.by/wp-content/uploads/2020/10/ruza-0410.jpg",
+        lat:52.8667, lng:24.8833,
+        hotelLat:52.868, hotelLng:24.885, hotelTime:"7 min walk",
+        eatLat:52.865, eatLng:24.881, eatTime:"4 min walk"
+      },
+      {
+        id:9, name:"Strochitsy Architecture Museum", nameRu:"Строчицы",
+        history:"Strochitsy is an open-air museum preserving traditional wooden architecture. Windmills, churches, and peasant huts recreate an 18th-century village. Artisans demonstrate weaving and pottery, keeping ancient crafts alive. It's a peaceful escape just outside Minsk, offering visitors a journey back in time.",
+        legend:"An open-air village where wooden churches and windmills guard tradition.",
+        program:["Architecture tour","Crafts","Lunch","Countryside walk"],
+        transportGroup:"15 min from Minsk.", transportSelf:"Taxi or bus.",
+        stay:"Minsk hotels", eat:"Museum tavern",
+        img:"https://travelbel.by/upload/resize_cache/iblock/37e/550_415_2/37e8a16b3487658e92629905e5079ad2.jpg",
+        lat:53.8150, lng:27.5300,
+        hotelLat:53.900, hotelLng:27.550, hotelTime:"20 min to Minsk",
+        eatLat:53.814, eatLng:27.528, eatTime:"on site"
+      },
+      {
+        id:10, name:"Bulhakov Palace (Zhilichi)", nameRu:"Дворец Булгаков (Жиличи)",
+        history:"The Bulhakov Palace in Zhilichi is a neoclassical estate built in the 19th century. Its elegant interiors boast remarkable frescoes and stucco work. The palace was a center of musical life, hosting salons attended by prominent composers. After meticulous restoration, it now functions as a museum, offering a glimpse into aristocratic Belarusian life.",
+        legend:"A neoclassical hidden gem with stunning frescoes and an enormous park.",
+        program:["Palace halls","Park alleys","Museum","Photo session"],
+        transportGroup:"2h from Mogilev.", transportSelf:"Car rental.",
+        stay:"Zhilichi guesthouse", eat:"Homestead café",
+        img:"https://34travel.me/media/upload/images/2023/AUGUST/zhylichy/296A3961%20copy.jpg",
+        lat:53.2000, lng:29.6000,
+        hotelLat:53.202, hotelLng:29.603, hotelTime:"5 min walk",
+        eatLat:53.199, eatLng:29.598, eatTime:"3 min walk"
+      }
+    ];
+
+    const activeTours = [
+      {
+        id: 'a1',
+        name: "Białowieża Forest",
+        nameRu: "Беловежская пуща",
+        history: "Białowieża Forest is one of the last and largest remaining parts of the immense primeval forest that once stretched across the European Plain. A UNESCO World Heritage Site, it is home to the European bison, the continent's heaviest land animal. The forest has been protected for centuries as a hunting ground of Polish kings and Russian tsars. Visitors can explore ancient oak groves, visit the Grandfather Frost estate, and enjoy cycling trails. The forest's biodiversity is unparalleled, with over 12,000 species of fauna. The quiet majesty of the trees, some over 500 years old, creates an almost spiritual experience.",
+        legend: "Walk among giants – trees that remember the Middle Ages.",
+        activities: ["Bison watching safari", "Nature museum visit", "Grandfather Frost's estate", "Cycling along marked trails", "Hiking through strict reserve"],
+        transportGroup: "4h drive from Minsk, comfortable bus.",
+        transportSelf: "Car via Brest highway (350 km).",
+        stay: "Białowieża Hotel",
+        eat: "Forest Tavern",
+        img: "https://bus.by/wp-content/uploads/2018/11/9622.jpg",
+        lat: 52.6990, lng: 23.8668,
+        hotelLat: 52.7025, hotelLng: 23.8712, hotelTime: "5 min walk",
+        eatLat: 52.6998, eatLng: 23.8650, eatTime: "2 min walk"
+      },
+      {
+        id: 'a2',
+        name: "Lake Naroch",
+        nameRu: "Нарочь",
+        history: "Lake Naroch, the largest lake in Belarus, was formed by retreating glaciers about 15,000 years ago. Its crystal-clear waters and sandy shores have made it a beloved summer destination for generations. The lake is part of the Naroch National Park, which includes numerous smaller lakes and rich pine forests. Visitors can enjoy sailing, windsurfing, kayaking, and fishing. The area is also known for its health resorts and mineral springs. The tranquil atmosphere combined with water activities creates a perfect balance for active families.",
+        legend: "Crystal waters surrounded by endless pine forests.",
+        activities: ["Kayaking and canoeing", "Sailing and windsurfing", "Cycling around the lake", "Beach volleyball", "Boat excursions to the island"],
+        transportGroup: "2.5h drive from Minsk, private transfer.",
+        transportSelf: "Car via P28 highway (160 km).",
+        stay: "Naroch Hotel Resort",
+        eat: "Lakeside Grill",
+        img: "https://ethnomir.ru/upload/iblock/cc8/nar660.jpg",
+        lat: 54.8530, lng: 26.7350,
+        hotelLat: 54.8560, hotelLng: 26.7400, hotelTime: "2 min walk",
+        eatLat: 54.8540, eatLng: 26.7330, eatTime: "1 min walk"
+      },
+      {
+        id: 'a3',
+        name: "Braslav Lakes",
+        nameRu: "Браславские озера",
+        history: "The Braslav Lakes National Park is a stunning network of over 30 pristine lakes, often called the 'Blue Necklace of Belarus'. The glacial landscape features rolling hills, deep blue waters, and numerous islands. The region is a paradise for ecotourism, offering unparalleled opportunities for boating, fishing, and hiking. Ancient settlements and historical sites dot the area, adding cultural depth to the natural beauty. The lakes are interconnected by channels, allowing for long kayaking expeditions. It's a place where time seems to stand still.",
+        legend: "The Blue Necklace of Belarus – endless water mirrors.",
+        activities: ["Island hopping by boat", "Fishing for pike and perch", "Hiking along panoramic trails", "Biking through national park", "Camping and bonfires"],
+        transportGroup: "3h drive from Minsk, comfortable minibus.",
+        transportSelf: "Car via M3 highway (250 km).",
+        stay: "Braslav Lakes Estate",
+        eat: "Fisherman's Hut",
+        img: "https://krasnagorka.by/wp-content/uploads/2021/10/izobrazhenie.png",
+        lat: 55.6330, lng: 27.0500,
+        hotelLat: 55.6360, hotelLng: 27.0550, hotelTime: "10 min walk",
+        eatLat: 55.6345, eatLng: 27.0480, eatTime: "4 min walk"
+      }
+    ];
+
+    // Favorites
+    function getFavorites() { return JSON.parse(localStorage.getItem('belarusFav') || '[]'); }
+    function saveFavorites(favs) { localStorage.setItem('belarusFav', JSON.stringify(favs)); updateWishlistCount(); }
+    function toggleFavorite(id, event) {
+      if (event) event.stopPropagation();
+      let favs = getFavorites();
+      if (favs.includes(id)) favs = favs.filter(f => f !== id);
+      else favs.push(id);
+      saveFavorites(favs);
+      renderAllCards();
+      if (document.getElementById('wishlist-page').classList.contains('active')) renderWishlist();
+    }
+    function updateWishlistCount() {
+      document.getElementById('wishlistCount').textContent = getFavorites().length;
+    }
+
+    function renderAllCards() {
+      const favs = getFavorites();
+      document.getElementById('toursGrid').innerHTML = tours.map(t => {
+        const isFav = favs.includes(t.id);
+        return `
+          <div class="tour-card" data-aos="fade-up">
+            <div class="card-img">
+              <img src="${t.img}" alt="${t.name}" onerror="this.src='https://placehold.co/600x400/001f3f/c5a059?text=${encodeURIComponent(t.name)}'">
+              <button class="favorite-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(${t.id}, event)">
+                <i class="${isFav ? 'fas' : 'far'} fa-heart"></i>
+              </button>
+            </div>
+            <div class="card-body" onclick="showTourDetail(${t.id})">
+              <h3>${t.name} <small style="font-size:0.8rem;color:#777;">${t.nameRu}</small></h3>
+              <div class="legend">“${t.legend.substring(0,85)}...”</div>
+              <div class="btn-card">Explore</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('activeGrid').innerHTML = activeTours.map(a => `
+        <div class="tour-card" data-aos="fade-up">
+          <div class="card-img">
+            <img src="${a.img}" alt="${a.name}" onerror="this.src='https://placehold.co/600x400/0a2a4a/c5a059?text=${encodeURIComponent(a.name)}'">
+          </div>
+          <div class="card-body" onclick="showActiveDetail('${a.id}')">
+            <h3>${a.name} <small>${a.nameRu}</small></h3>
+            <div class="legend">“${a.legend.substring(0,85)}...”</div>
+            <div class="btn-card">View Activities</div>
+          </div>
+        </div>`).join('');
+      AOS.refresh();
+    }
+
+    // Детальная страница культурного тура
+    window.showTourDetail = function(id) {
+      const t = tours.find(x => x.id === id);
+      if (!t) return;
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('tour-detail-page').classList.add('active');
+      document.getElementById('tourDetailContent').innerHTML = `
+        <button class="back-btn" onclick="hideTourDetail()"><i class="fas fa-arrow-left"></i> Back</button>
+        <h1>${t.name} <span style="color:#666;">${t.nameRu}</span></h1>
+        <p style="font-weight:600; color:var(--deep-blue);"><i class="fas fa-landmark"></i> History & Fame</p>
+        <p>${t.history}</p>
+        <p style="font-style:italic; color:#555;">“${t.legend}”</p>
+        <img src="${t.img}" class="tour-img" onerror="this.src='https://placehold.co/900x400/001f3f/c5a059?text=${encodeURIComponent(t.name)}'" alt="${t.name}">
+        <h3><i class="fas fa-list-ol" style="color:var(--gold);"></i> Itinerary</h3>
+        <ol class="itinerary-list">${t.program.map((s,i) => `<li><span>${i+1}.</span> ${s}</li>`).join('')}</ol>
+        <div class="logistics-block">
+          <div><i class="fas fa-bus"></i> <strong>Group:</strong> ${t.transportGroup}</div>
+          <div><i class="fas fa-car"></i> <strong>Self:</strong> ${t.transportSelf}</div>
+        </div>
+        <div style="display:flex; gap:40px; margin:20px 0;">
+          <div><i class="fas fa-hotel" style="color:var(--gold);"></i> Stay: ${t.stay} (${t.hotelTime})</div>
+          <div><i class="fas fa-utensils"></i> Eat: ${t.eat} (${t.eatTime})</div>
+        </div>
+        <div style="display:flex; gap:20px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:240px;"><strong>Hotel route</strong><div id="miniHotel-${t.id}" class="mini-map"></div></div>
+          <div style="flex:1; min-width:240px;"><strong>Restaurant route</strong><div id="miniEat-${t.id}" class="mini-map"></div></div>
+        </div>
+        <button class="btn" style="width:100%; margin-top:20px;" onclick="openBooking('${t.name}')"><i class="fas fa-ticket-alt"></i> Book Now</button>
+      `;
+      window.scrollTo({top:0, behavior:'smooth'});
+      setTimeout(() => initMiniMaps(t), 400);
+    };
+
+    function hideTourDetail() {
+      document.getElementById('tour-detail-page').classList.remove('active');
+      document.getElementById('home-page').classList.add('active');
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    // Детальная страница активного отдыха
+    window.showActiveDetail = function(id) {
+      const a = activeTours.find(x => x.id === id);
+      if (!a) return;
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('active-detail-page').classList.add('active');
+      document.getElementById('activeDetailContent').innerHTML = `
+        <button class="back-btn" onclick="hideActiveDetail()"><i class="fas fa-arrow-left"></i> Back</button>
+        <h1>${a.name} <span style="color:#666;">${a.nameRu}</span></h1>
+        <p style="font-weight:600; color:var(--deep-blue);"><i class="fas fa-tree"></i> About the Area</p>
+        <p>${a.history}</p>
+        <p style="font-style:italic; color:#555;">“${a.legend}”</p>
+        <img src="${a.img}" class="tour-img" onerror="this.src='https://placehold.co/900x400/0a2a4a/c5a059?text=${encodeURIComponent(a.name)}'" alt="${a.name}">
+        <h3><i class="fas fa-hiking" style="color:var(--gold);"></i> Activities & Program</h3>
+        <ol class="itinerary-list">${a.activities.map((act,i) => `<li><span>${i+1}.</span> ${act}</li>`).join('')}</ol>
+        <div class="logistics-block">
+          <div><i class="fas fa-bus"></i> <strong>Group:</strong> ${a.transportGroup}</div>
+          <div><i class="fas fa-car"></i> <strong>Self:</strong> ${a.transportSelf}</div>
+        </div>
+        <div style="display:flex; gap:40px; margin:20px 0;">
+          <div><i class="fas fa-hotel" style="color:var(--gold);"></i> Stay: ${a.stay} (${a.hotelTime})</div>
+          <div><i class="fas fa-utensils"></i> Eat: ${a.eat} (${a.eatTime})</div>
+        </div>
+        <div style="display:flex; gap:20px; flex-wrap:wrap;">
+          <div style="flex:1; min-width:240px;"><strong>Hotel route</strong><div id="miniHotelActive-${a.id}" class="mini-map"></div></div>
+          <div style="flex:1; min-width:240px;"><strong>Restaurant route</strong><div id="miniEatActive-${a.id}" class="mini-map"></div></div>
+        </div>
+        <button class="btn" style="width:100%; margin-top:20px;" onclick="openBooking('${a.name}')"><i class="fas fa-ticket-alt"></i> Book Nature Retreat</button>
+      `;
+      window.scrollTo({top:0, behavior:'smooth'});
+      setTimeout(() => initMiniMapsActive(a), 400);
+    };
+
+    function hideActiveDetail() {
+      document.getElementById('active-detail-page').classList.remove('active');
+      document.getElementById('home-page').classList.add('active');
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function initMiniMaps(t) {
+      const hEl = document.getElementById(`miniHotel-${t.id}`);
+      const eEl = document.getElementById(`miniEat-${t.id}`);
+      if (!hEl || !eEl) return;
+      function makeMap(el, dlat, dlng, color) {
+        if (el._leaflet_id) return;
+        const map = L.map(el, { zoomControl: false, attributionControl: false }).setView([t.lat, t.lng], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '' }).addTo(map);
+        L.marker([t.lat, t.lng]).addTo(map);
+        L.marker([dlat, dlng]).addTo(map);
+        L.polyline([[t.lat, t.lng], [dlat, dlng]], { color: color, weight: 4, dashArray: '5,8' }).addTo(map);
+        setTimeout(() => map.invalidateSize(), 50);
+      }
+      makeMap(hEl, t.hotelLat, t.hotelLng, 'blue');
+      makeMap(eEl, t.eatLat, t.eatLng, 'green');
+    }
+
+    function initMiniMapsActive(a) {
+      const hEl = document.getElementById(`miniHotelActive-${a.id}`);
+      const eEl = document.getElementById(`miniEatActive-${a.id}`);
+      if (!hEl || !eEl) return;
+      function makeMap(el, dlat, dlng, color) {
+        if (el._leaflet_id) return;
+        const map = L.map(el, { zoomControl: false, attributionControl: false }).setView([a.lat, a.lng], 14);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '' }).addTo(map);
+        L.marker([a.lat, a.lng]).addTo(map);
+        L.marker([dlat, dlng]).addTo(map);
+        L.polyline([[a.lat, a.lng], [dlat, dlng]], { color: color, weight: 4, dashArray: '5,8' }).addTo(map);
+        setTimeout(() => map.invalidateSize(), 50);
+      }
+      makeMap(hEl, a.hotelLat, a.hotelLng, 'blue');
+      makeMap(eEl, a.eatLat, a.eatLng, 'green');
+    }
+
+    window.showWishlist = function() {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('wishlist-page').classList.add('active');
+      renderWishlist();
+      window.scrollTo({top:0, behavior:'smooth'});
+    };
+    function renderWishlist() {
+      const favIds = getFavorites();
+      const items = tours.filter(t => favIds.includes(t.id));
+      document.getElementById('wishlistContainer').innerHTML = items.length ? items.map(t => `
+        <div class="tour-card" data-aos="fade-up" onclick="showTourDetail(${t.id})">
+          <div class="card-img"><img src="${t.img}" onerror="this.src='https://placehold.co/600x400/001f3f/c5a059?text=${encodeURIComponent(t.name)}'"></div>
+          <div class="card-body"><h3>${t.name}</h3><div class="btn-card">View</div></div>
+        </div>`).join('') : '<p>No favorites yet.</p>';
+    }
+
+    // --- СИСТЕМА БРОНИРОВАНИЯ (СТАТИЧЕСКОЕ МОДАЛЬНОЕ ОКНО) ---
+    function openBooking(tourName) {
+      document.getElementById('modalTitle').innerText = 'Book ' + tourName;
+      document.getElementById('bookingModal').style.display = 'flex';
+    }
+    function closeBookingModal() {
+      document.getElementById('bookingModal').style.display = 'none';
+    }
+    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      showNotification('Booking confirmed! We will contact you shortly.');
+      closeBookingModal();
+    });
+
+    function showNotification(msg) {
+      const n = document.getElementById('notification');
+      n.innerHTML = `<i class="fas fa-check-circle"></i> ${msg}`;
+      n.style.display = 'flex';
+      setTimeout(() => n.style.display = 'none', 4000);
+    }
+
+    function renderCalendar() {
+      const w = document.getElementById('calendarWidget');
+      if (!w) return;
+      const now = new Date(), month = now.getMonth(), year = now.getFullYear();
+      const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const firstDay = new Date(year, month, 1).getDay(), daysInMonth = new Date(year, month+1, 0).getDate();
+      const startDay = firstDay === 0 ? 6 : firstDay - 1;
+      let html = `<div style="display:flex; justify-content:space-between; margin-bottom:16px;"><h3>${months[month]} ${year}</h3></div><div class="days-grid">`;
+      html += '<div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>';
+      for (let i=0; i<startDay; i++) html += '<div></div>';
+      for (let d=1; d<=daysInMonth; d++) html += `<div class="day-cell" data-day="${d}" onclick="selectDate(${d})">${d}</div>`;
+      html += `</div><div id="calendarOffers" style="margin-top:20px;">📅 Select a date</div>`;
+      w.innerHTML = html;
+    }
+    window.selectDate = function(day) {
+      document.querySelectorAll('.day-cell').forEach(e => e.classList.remove('selected'));
+      document.querySelector(`.day-cell[data-day='${day}']`)?.classList.add('selected');
+      const off = document.getElementById('calendarOffers');
+      if (!off) return;
+      const shuffled = [...tours].sort(() => 0.5 - Math.random());
+      const avail = shuffled.slice(0, 2 + (day % 3));
+      off.innerHTML = avail.map(t => `<div style="background:#f4f7fa; border-radius:16px; padding:10px 16px; margin:8px 0; display:flex; justify-content:space-between;"><strong>${t.name}</strong> <button class="btn-outline" style="padding:4px 12px;" onclick="showTourDetail(${t.id})">View</button></div>`).join('') || 'No tours.';
+    };
+
+    function initMainMap() {
+      if (window.mainMap) return;
+      const el = document.getElementById('mapid'); if (!el) return;
+      window.mainMap = L.map('mapid').setView([53.7, 27.5], 7);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' }).addTo(window.mainMap);
+      tours.forEach(t => L.marker([t.lat, t.lng]).addTo(window.mainMap).bindPopup(`<b>${t.name}</b><br><a href="#" onclick="showTourDetail(${t.id}); return false;">View →</a>`));
+      activeTours.forEach(a => L.marker([a.lat, a.lng]).addTo(window.mainMap).bindPopup(`<b>${a.name}</b><br><a href="#" onclick="showActiveDetail('${a.id}'); return false;">View →</a>`));
+    }
+
+    window.navigateTo = function(section) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('home-page').classList.add('active');
+      const map = { home: null, tours: 'tours-section', active: 'active-section', calendar: 'calendar-section', map: 'map-section' };
+      setTimeout(() => {
+        const el = document.getElementById(map[section]);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        else window.scrollTo({ top: 0 });
+        if (section === 'calendar') renderCalendar();
+        if (section === 'map') setTimeout(initMainMap, 200);
+      }, 60);
+    };
+
+    // AI Chat with inactivity timer
+    let idleTimer;
+    function resetIdle() {
+      clearTimeout(idleTimer);
+      if (!document.getElementById('aiChat').classList.contains('active')) {
+        idleTimer = setTimeout(() => {
+          document.getElementById('aiChat').classList.add('active');
+        }, 20000);
+      }
+    }
+    window.toggleAiChat = function() {
+      const chat = document.getElementById('aiChat');
+      chat.classList.toggle('active');
+      if (chat.classList.contains('active')) clearTimeout(idleTimer);
+      else resetIdle();
+    };
+    window.closeAiChat = function() {
+      document.getElementById('aiChat').classList.remove('active');
+      resetIdle();
+    };
+    window.aiResponse = function(type) {
+      const ans = document.getElementById('aiAnswer');
+      ans.innerHTML = type === 'castle' ? '🏰 I recommend starting with Nesvizh or Lida Castle!' : '🌲 Then you will love Białowieża Forest or Lake Naroch!';
+    };
+    ['mousemove', 'keydown', 'click', 'scroll'].forEach(ev => window.addEventListener(ev, resetIdle));
+    resetIdle();
+
+    // Particles.js initialization
+    particlesJS('particles-js', {
+      particles: {
+        number: { value: 50, density: { enable: true, value_area: 800 } },
+        color: { value: '#c5a059' },
+        shape: { type: 'circle' },
+        opacity: { value: 0.3, random: true },
+        size: { value: 3, random: true },
+        line_linked: { enable: false },
+        move: { enable: true, speed: 1.5, direction: 'none', random: true, straight: false, out_mode: 'out' }
+      },
+      interactivity: { detect_on: 'canvas', events: { onhover: { enable: true, mode: 'repulse' } } }
+    });
+
+    // Preloader
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('preloader').classList.add('hidden');
+      }, 500);
+    });
+
+    // Back to Top
+    window.addEventListener('scroll', () => {
+      document.getElementById('backToTop').style.display = window.scrollY > 500 ? 'block' : 'none';
+    });
+
+    // Initialize AOS
+    AOS.init({ duration: 800, easing: 'ease-out', once: true });
+    // Render initial content
+    renderAllCards();
+    renderCalendar();
+    updateWishlistCount();
+    setTimeout(() => { initMainMap(); }, 600);
+  </script>
+</body>
+</html>
