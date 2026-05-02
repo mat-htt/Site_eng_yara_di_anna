@@ -250,6 +250,7 @@
         <a href="#" onclick="navigateTo('calendar')">Calendar</a>
         <a href="#" onclick="navigateTo('map')">Map</a>
         <a href="#" onclick="showWishlist()"><i class="far fa-heart"></i> Wishlist <span class="wishlist-count" id="wishlistCount">0</span></a>
+        <a href="#" onclick="showMyToursDashboard()"><i class="fas fa-suitcase"></i> My Tours</a>
       </nav>
     </div>
   </header>
@@ -330,14 +331,15 @@
   </footer>
   <button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i class="fas fa-arrow-up"></i></button>
 
-  <!-- СТАТИЧНОЕ МОДАЛЬНОЕ ОКНО ДЛЯ БРОНИРОВАНИЯ -->
+  <!-- МОДАЛЬНОЕ ОКНО ДЛЯ БРОНИРОВАНИЯ С TELEGRAM -->
   <div id="bookingModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:3500;">
     <div class="glass" style="padding:32px; border-radius:28px; max-width:450px; width:90%;">
-      <h3 id="modalTitle">Book Tour</h3>
+      <h3 id="modalTitle" style="margin-bottom:20px; color:#001f3f;">Book Tour</h3>
       <form id="bookingForm">
         <input type="text" placeholder="Full Name" required style="width:100%; padding:12px; margin:8px 0; border-radius:30px; border:1px solid #ddd;">
         <input type="email" placeholder="Email" required style="width:100%; padding:12px; margin:8px 0; border-radius:30px; border:1px solid #ddd;">
         <input type="tel" placeholder="Phone" style="width:100%; padding:12px; margin:8px 0; border-radius:30px; border:1px solid #ddd;">
+        <input type="text" placeholder="Telegram @username (optional)" style="width:100%; padding:12px; margin:8px 0; border-radius:30px; border:1px solid #ddd;">
         <input type="number" placeholder="Travelers" min="1" required style="width:100%; padding:12px; margin:8px 0; border-radius:30px; border:1px solid #ddd;">
         <input type="date" required style="width:100%; padding:12px; margin:8px 0; border-radius:30px; border:1px solid #ddd;">
         <button class="btn" type="submit" style="width:100%; margin-top:12px;">Confirm Booking</button>
@@ -431,7 +433,7 @@
         program:["Cathedral interior","Museum","Boris stone","Old town","River walk"],
         transportGroup:"3h train from Minsk.", transportSelf:"Train to Polotsk.",
         stay:"Dvina Hotel", eat:"Francheska Café",
-        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/80-391-0151_Kyiv_St.Sophia%27s_Cathedral_RB_18_2_%28cropped%29.jpg/330px-80-391-0151_Kyiv_St.Sophia%27s_Cathedral_RB_18_2_%28cropped%29.jpg",
+        img:"https://upload.wikimedia.org/wikipedia/commons/e/ef/%D0%9F%D0%BE%D0%BB%D0%B0%D1%86%D0%BA._%D0%A1%D0%B0%D1%84%D1%96%D0%B9%D1%81%D0%BA%D1%96_%D1%81%D0%B0%D0%B1%D0%BE%D1%80.jpg",
         lat:55.4833, lng:28.8000,
         hotelLat:55.485, hotelLng:28.803, hotelTime:"10 min walk",
         eatLat:55.482, eatLng:28.798, eatTime:"5 min walk"
@@ -561,21 +563,44 @@
           </div>`;
       }).join('');
 
-      document.getElementById('activeGrid').innerHTML = activeTours.map(a => `
-        <div class="tour-card" data-aos="fade-up">
-          <div class="card-img">
-            <img src="${a.img}" alt="${a.name}" onerror="this.src='https://placehold.co/600x400/0a2a4a/c5a059?text=${encodeURIComponent(a.name)}'">
-          </div>
-          <div class="card-body" onclick="showActiveDetail('${a.id}')">
-            <h3>${a.name} <small>${a.nameRu}</small></h3>
-            <div class="legend">“${a.legend.substring(0,85)}...”</div>
-            <div class="btn-card">View Activities</div>
-          </div>
-        </div>`).join('');
+      document.getElementById('activeGrid').innerHTML = activeTours.map(a => {
+        const isFav = favs.includes(a.id);
+        return `
+          <div class="tour-card" data-aos="fade-up">
+            <div class="card-img">
+              <img src="${a.img}" alt="${a.name}" onerror="this.src='https://placehold.co/600x400/0a2a4a/c5a059?text=${encodeURIComponent(a.name)}'">
+              <button class="favorite-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite('${a.id}', event)">
+                <i class="${isFav ? 'fas' : 'far'} fa-heart"></i>
+              </button>
+            </div>
+            <div class="card-body" onclick="showActiveDetail('${a.id}')">
+              <h3>${a.name} <small>${a.nameRu}</small></h3>
+              <div class="legend">“${a.legend.substring(0,85)}...”</div>
+              <div class="btn-card">View Activities</div>
+            </div>
+          </div>`;
+      }).join('');
+
       AOS.refresh();
     }
 
-    // Детальная страница культурного тура
+    function renderWishlist() {
+      const favIds = getFavorites();
+      const favTours = tours.filter(t => favIds.includes(t.id));
+      const favActive = activeTours.filter(a => favIds.includes(a.id));
+      const allFavs = [...favTours, ...favActive];
+
+      document.getElementById('wishlistContainer').innerHTML = allFavs.length ? allFavs.map(item => {
+        const isActive = item.hasOwnProperty('activities');
+        const openFunc = isActive ? `showActiveDetail('${item.id}')` : `showTourDetail(${item.id})`;
+        return `
+          <div class="tour-card" data-aos="fade-up" onclick="${openFunc}">
+            <div class="card-img"><img src="${item.img}" onerror="this.src='https://placehold.co/600x400/001f3f/c5a059?text=${encodeURIComponent(item.name)}'"></div>
+            <div class="card-body"><h3>${item.name} <small>${item.nameRu || ''}</small></h3><div class="btn-card">View</div></div>
+          </div>`;
+      }).join('') : '<div style="text-align:center; padding:40px;">No favorites yet.</div>';
+    }
+
     window.showTourDetail = function(id) {
       const t = tours.find(x => x.id === id);
       if (!t) return;
@@ -693,29 +718,6 @@
       renderWishlist();
       window.scrollTo({top:0, behavior:'smooth'});
     };
-    function renderWishlist() {
-      const favIds = getFavorites();
-      const items = tours.filter(t => favIds.includes(t.id));
-      document.getElementById('wishlistContainer').innerHTML = items.length ? items.map(t => `
-        <div class="tour-card" data-aos="fade-up" onclick="showTourDetail(${t.id})">
-          <div class="card-img"><img src="${t.img}" onerror="this.src='https://placehold.co/600x400/001f3f/c5a059?text=${encodeURIComponent(t.name)}'"></div>
-          <div class="card-body"><h3>${t.name}</h3><div class="btn-card">View</div></div>
-        </div>`).join('') : '<p>No favorites yet.</p>';
-    }
-
-    // --- СИСТЕМА БРОНИРОВАНИЯ (СТАТИЧЕСКОЕ МОДАЛЬНОЕ ОКНО) ---
-    function openBooking(tourName) {
-      document.getElementById('modalTitle').innerText = 'Book ' + tourName;
-      document.getElementById('bookingModal').style.display = 'flex';
-    }
-    function closeBookingModal() {
-      document.getElementById('bookingModal').style.display = 'none';
-    }
-    document.getElementById('bookingForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      showNotification('Booking confirmed! We will contact you shortly.');
-      closeBookingModal();
-    });
 
     function showNotification(msg) {
       const n = document.getElementById('notification');
@@ -830,6 +832,18 @@
     renderCalendar();
     updateWishlistCount();
     setTimeout(() => { initMainMap(); }, 600);
+  </script>
+  <script src="bookings.js"></script>
+  <link rel="stylesheet" href="styles-add.css">
+  <script src="../telegram-bot.js"></script>
+  <script src="admin-panel.js"></script>
+  <script src="user-dashboard.js"></script>
+  <script src="reviews.js"></script>
+  <script>
+    setTimeout(() => {
+      if (typeof addAdminFooterButton === 'function') addAdminFooterButton();
+      else console.warn('addAdminFooterButton not found, but will be added by admin-panel.js');
+    }, 1500);
   </script>
 </body>
 </html>
